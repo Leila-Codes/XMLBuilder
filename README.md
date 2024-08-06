@@ -40,7 +40,7 @@ func main() {
 
 	// Can also marshal in-memory
 	content := bytes.Buffer{}
-	XMLBuilder.Marshal(doc, &content)
+	XMLBuilder.Marshal(doc, content)
 	
 	/* OUTPUT:
 	<?xml version="1.0" encoding="UTF-8"?>
