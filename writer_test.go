@@ -27,8 +27,8 @@ func TestMarshal(t *testing.T) {
 	<Name>My First Extension</Name>
 </ExtensionInfo>`
 
-	buff := bytes.Buffer{}
-	err := Marshal(doc, &buff)
+	buff := &bytes.Buffer{}
+	err := Marshal(doc, buff)
 
 	assert.Nil(t, err)
 	assert.Equal(t, expects, buff.String())

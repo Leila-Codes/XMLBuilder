@@ -7,7 +7,6 @@ import (
 
 func Marshal(doc *Document, writer io.Writer) (err error) {
 	buff := bufio.NewWriter(writer)
-
 	_, err = buff.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
 	if err != nil {
 		return err
@@ -22,7 +21,7 @@ func Marshal(doc *Document, writer io.Writer) (err error) {
 		return err
 	}
 
-	return nil
+	return buff.Flush()
 }
 
 func writeElement(buff *bufio.Writer, element Element, depth int) (err error) {
