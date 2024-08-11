@@ -3,31 +3,31 @@ package XMLBuilder
 import "strings"
 
 const (
-	StartElement = "<"
-	EndElement   = ">"
-	Quote        = "\""
-	Apostrophe   = "'"
-	Ampersand    = "&"
-	Space        = " "
-	Equals       = "="
+	StartElement = '<'
+	EndElement   = '>'
+	Quote        = '"'
+	Apostrophe   = '\''
+	Ampersand    = '&'
+	Space        = ' '
+	Equals       = '='
 )
 
 var xmlEncoder = strings.NewReplacer(
-	StartElement, "&lt;",
-	EndElement, "&gt;",
-	Quote, "&quot;",
-	Apostrophe, "&apos;",
-	Ampersand, "&amp;",
+	string(StartElement), "&lt;",
+	string(EndElement), "&gt;",
+	string(Quote), "&quot;",
+	//string(Apostrophe), "&apos;",
+	string(Ampersand), "&amp;",
 )
 
 var xmlDecoder = strings.NewReplacer(
-	"&lt;", StartElement,
-	"&gt;", EndElement,
-	"&quot;", Quote,
-	"&apos;", Apostrophe,
-	"&amp;", Ampersand,
+	"&lt;", string(StartElement),
+	"&gt;", string(EndElement),
+	"&quot;", string(Quote),
+	"&apos;", string(Apostrophe),
+	"&amp;", string(Ampersand),
 )
 
 func quote(s string) string {
-	return Quote + xmlEncoder.Replace(s) + Quote
+	return string(Quote) + xmlEncoder.Replace(s) + string(Quote)
 }

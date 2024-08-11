@@ -1,54 +1,133 @@
 package XMLBuilder
 
-type ElementBuilder struct {
-	elem *Element
+import (
+	"bufio"
+)
+
+type elementBuilder struct {
+	parent *elementBuilder
+	name   string
+	writer *bufio.Writer
+	closed bool
 }
 
-// XAttribute appends a new attribute with the given name and value to the current XML element.
-func (builder *ElementBuilder) XAttribute(name, value string) *ElementBuilder {
-	attr := Attribute{name, value}
+const (
+	xmlVersionHeader = `<?xml version="1.0" encoding="UTF-8"?>`
+)
 
-	if builder.elem.Attributes == nil {
-		builder.elem.Attributes = make([]Attribute, 1)
-		builder.elem.Attributes[0] = attr
+func (eb *elementBuilder) Element(name string) ElementBuilder {
+	if !eb.closed {
+		_, err := eb.writer.WriteRune(EndElement)
+		if err != nil {
+			panic(err)
+		}
+		eb.closed = true
+	}
+	_, err := eb.writer.WriteString("\n\t")
+	if err != nil {
+		panic(err)
+	}
+	_, err = eb.writer.WriteRune(StartElement)
+	if err != nil {
+		panic(err)
+	}
+	_, err = eb.writer.WriteString(name)
+	if err != nil {
+		panic(err)
+	}
+
+	return &elementBuilder{
+		parent: eb,
+		writer: eb.writer,
+		name:   name,
+	}
+}
+
+func (eb *elementBuilder) Attr(name, value string) ElementBuilder {
+	_, err := eb.writer.WriteRune(Space)
+	if err != nil {
+		panic(err)
+	}
+	_, err = eb.writer.WriteString(name)
+	if err != nil {
+		panic(err)
+	}
+	_, err = eb.writer.WriteRune(Equals)
+	if err != nil {
+		panic(err)
+	}
+	_, err = eb.writer.WriteString(quote(value))
+	if err != nil {
+		panic(err)
+	}
+
+	return eb
+}
+
+func (eb *elementBuilder) Content(content string) ElementBuilder {
+	if !eb.closed {
+		_, err := eb.writer.WriteRune(EndElement)
+		if err != nil {
+			panic(err)
+		}
+		eb.closed = true
+	}
+	_, err := eb.writer.WriteString(xmlEncoder.Replace(content))
+	if err != nil {
+		panic(err)
+	}
+
+	return eb
+}
+
+func (eb *elementBuilder) Close(selfClosing bool) ElementBuilder {
+	if selfClosing {
+		_, err := eb.writer.WriteRune('/')
+		if err != nil {
+			panic(err)
+		}
+		_, err = eb.writer.WriteRune(EndElement)
+		if err != nil {
+			panic(err)
+		}
 	} else {
-		builder.elem.Attributes = append(builder.elem.Attributes, attr)
+		if !eb.closed {
+			_, err := eb.writer.WriteRune(EndElement)
+			if err != nil {
+				panic(err)
+			}
+		}
+		if eb.parent == nil {
+			_, err := eb.writer.WriteString("\n")
+			if err != nil {
+				panic(err)
+			}
+		}
+		_, err := eb.writer.WriteRune(StartElement)
+		if err != nil {
+			panic(err)
+		}
+		_, err = eb.writer.WriteRune('/')
+		if err != nil {
+			panic(err)
+		}
+		_, err = eb.writer.WriteString(eb.name)
+		if err != nil {
+			panic(err)
+		}
+		_, err = eb.writer.WriteRune(EndElement)
+		if err != nil {
+			panic(err)
+		}
 	}
 
-	return builder
-}
-
-// Content sets the text content of the current element, and automatically closes the element as there's nothing further to write.
-func (builder *ElementBuilder) Content(content string) Element {
-	builder.elem.Value = content
-	return *builder.elem
-}
-
-// Close closes the current element in progress, returning the finalised element.
-func (builder *ElementBuilder) Close(selfClosing ...bool) Element {
-	if len(selfClosing) > 0 {
-		builder.elem.SelfClose = selfClosing[0]
+	// if this is the root element, flush the buffer
+	if eb.parent == nil {
+		err := eb.writer.Flush()
+		if err != nil {
+			panic(err)
+		}
 	}
 
-	return *builder.elem
-}
-
-// XElement constructs a new XML element with the given name and (optionally) a list of child nodes.
-func XElement(
-	name string,
-	children ...Element,
-) *ElementBuilder {
-	return &ElementBuilder{
-		&Element{
-			Attribute: &Attribute{Name: name},
-			Children:  children,
-		},
-	}
-}
-
-// XDocument constructs a brand-new XML document with the given element as it's root.
-func XDocument(root Element) *Document {
-	return &Document{
-		root,
-	}
+	return eb.parent
 }

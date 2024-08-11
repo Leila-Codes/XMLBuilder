@@ -15,40 +15,38 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/Leila-Codes/XMLBuilder"
+	"os"
 )
 
 func main() {
-	doc := XMLBuilder.XDocument(
-		XMLBuilder.XElement(
-			// Write your element's name
-			"User",
-			// (optional) define any children
-			// <FirstName>Leila-Codes</FirstName>
-			XMLBuilder.XElement("FirstName").Content("Leila-Codes"), // set text content
-			// <Metadata age="5"/>
-			XMLBuilder.XElement("Metadata").Attribute("age", "5").Close(true), // self-close "true"
-		).Close(),
-	)
-
-	file, err := os.Open("output.xml")
+	// Open a file for writing
+	file, err := os.OpenFile("output.xml", os.O_CREATE|os.O_TRUNC, 644)
 	if err != nil {
 		panic(err)
 	}
 
-	// Marshal the whole thing.
-	XMLBuilder.Marshal(doc, file)
-
-	// Can also marshal in-memory
-	content := bytes.Buffer{}
-	XMLBuilder.Marshal(doc, content)
+	// Create a new XML document
+	doc := XMLBuilder.NewDocument(file)
 	
-	/* OUTPUT:
+	// Write your root element
+	root := doc.Element("UserAccount")
+	
+	// Write its children
+	root.Element("FirstName").Content("Leila-Codes").Close(false)
+	root.Element("Metadata").Attr("age", "5").Close(true)
+	
+	// Close the root node (specifying whether it's a self-closing element or not)
+	root.Close(false)
+
+	// Close the file
+	file.Close()
+	
+	/* File Contents:
 	<?xml version="1.0" encoding="UTF-8"?>
-	<User>
-	    <FirstName>Leila-Codes</FirstName>
-	    <Metadata age="5"/>
-	</User>
+	<UserAccount>
+		<FirstName>Leila-Codes</FirstName>
+		<Metadata age="5"/>
+	</UserAccount>
 	*/
-	fmt.Print(content.String())
 }
 ```
